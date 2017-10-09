@@ -11,8 +11,7 @@ function buildParallelCoordinates(data, popt, toggleArray){
 	    background,
 			foreground;
 			
-	var r_axis = 40,
-			l_axis = 270;
+			
 
 	var clusterScale = 0.15;
 
@@ -30,12 +29,20 @@ function buildParallelCoordinates(data, popt, toggleArray){
 		var points = dimensions.map(function(p){
 			return [x(p), y[p](d[p])];
 		});
+
+		// var r_axis = 0.10*(points[1][0] - points[0][0]),
+		// l_axis = 0.90*(points[1][0] - points[0][0]);
+
+		var path = d3.path()
 		
 		var npoints = [];
-		npoints.push(points[0]);
+
+		path.moveTo(points[0][0], points[0][1]);
 		for (var i = 0; i < dimensions.length-1; i++){
 			
 			var scale = y[dimensions[i]];
+			
+		
 
 			var umean = scale(stats[dimensions[i]][1].mean),
 					umax = stats[dimensions[i]][1].max,
@@ -44,12 +51,24 @@ function buildParallelCoordinates(data, popt, toggleArray){
 			var lmean = scale(stats[dimensions[i]][0].mean),
 					lmax = stats[dimensions[i]][0].max,
 					lmin = stats[dimensions[i]][0].min;
-					// console.log(d[dimensions[i]] >= lmin && d[dimensions[i]] > lmin <= umax);
-			// x0 + s(xA−x0)
-			(d[dimensions[i]] > lmax) ? npoints.push([points[i][0]+r_axis, umean + clusterScale * (points[i][1] - umean)]) 
-									  : npoints.push([points[i][0]+r_axis, lmean + clusterScale * (points[i][1] - lmean)]);
+					
+			var cpx1 = points[i][0]+r_axis/2;
+			var y1 = umean + clusterScale * (points[i][1] - umean);
+			var ly1 = lmean + clusterScale * (points[i][1] - lmean);
 			
+			
+
+			// x0 + s(xA−x0)
+			// path to first bundle axis
+			var yp = (d[dimensions[i]] > lmax) ? y1 : ly1;
+			
+			path.bezierCurveTo(cpx1, points[i][1], cpx1, yp, points[i][0]+r_axis, yp);
+									  
+			
+
+			cpx1 = (points[i][0] + points[i+1][0])/2;
 			scale = y[dimensions[i+1]];
+
 			umean = scale(stats[dimensions[i+1]][1].mean);
 			umax = stats[dimensions[i+1]][1].max;
 			umin = stats[dimensions[i+1]][1].min;
@@ -57,18 +76,26 @@ function buildParallelCoordinates(data, popt, toggleArray){
 			lmean = scale(stats[dimensions[i+1]][0].mean);
 			lmax = stats[dimensions[i+1]][0].max;
 			lmin = stats[dimensions[i+1]][0].min;
-
-			(d[dimensions[i+1]] > lmax) ? npoints.push([points[i][0]+l_axis, umean + clusterScale * (points[i+1][1] - umean)])
-									     : npoints.push([points[i][0]+l_axis, lmean + clusterScale * (points[i+1][1] - lmean)]);
 			
-			
+			// path to second bundle axis of next dimension
+			var a = umean + clusterScale * (points[i+1][1] - umean);
+			var b = lmean + clusterScale * (points[i+1][1] - lmean);
+			var yy = (d[dimensions[i+1]] > lmax) ? a : b;
 
-			npoints.push(points[i+1]);
+			path.bezierCurveTo(cpx1, yp, cpx1, yy, 
+				               points[i][0]+l_axis, yy);
+			
+				
+			var cpx2 = points[i+1][0]-r_axis/2
+			path.bezierCurveTo(cpx2, yy, cpx2, points[i+1][1], 
+			                   points[i+1][0], points[i+1][1]);
+			
 			
 		}
 		// npoints.push(points[i]);
 		// return line(dimensions.map(function(p) {return [x(p), y[p](d[p])]; }));
-		return line(npoints);
+		// return line(npoints);
+		return path;
 	}
 
 	// Handles a brush event, toggling the display of foreground lines.
@@ -85,6 +112,7 @@ function buildParallelCoordinates(data, popt, toggleArray){
 	var dimensions  = d3.keys(data[0]);
 	dimensions = ["displacement (cc)", "power (hp)", "weight (lb)", "year"]
 	//dim = _.difference(dimensions, categorical);
+	
 
 	x.domain(dimensions);
 	var stats = {};
@@ -110,49 +138,22 @@ function buildParallelCoordinates(data, popt, toggleArray){
 			"min": _.min(l2)
 		}]
 
-
-	  if (_.contains(popt.categorical, d)){
-	    var uniq = _.unique(cars.map(function(dp){ return dp[d];}));
-	    var r    = [];
-	    var h    = height;
-	    var i    = 1;
-	    var div  = height/(uniq.length-1);
-	    for (var u in uniq){
-	      r.push(Math.floor(h));
-	      h = h - div;
-	    }
-
-	    y[d] = d3.scaleOrdinal().domain(uniq)
-	                             .range(r);
-	  } else {
-	    y[d] = d3.scaleLinear();
-	                           
-		if (d == "power (hp)" && _.contains(toggleArray, d)){
-			// transform points in terms of height
-
-			y[d] = y[d].domain(popt[d][0])
-			           .range([height, height*.15, 0]);
-
-		}
-		else
-			if (d == "t0t60 mph(s)" && _.contains(toggleArray, d)){
-			
-
-			y[d] = y[d].domain(popt[d][0])
-				       .range([height, height*.90, height*.10,  0]);
-			
-		}
-
-		else{
-			y[d].domain(d3.extent(cars, function(datapoint){ return +datapoint[d];}))
-			           .range([height, 0]);
-		}
-
-	  }
+		y[d] = d3.scaleLinear();
+		y[d].domain(d3.extent(cars, function(datapoint){ return +datapoint[d];}))
+			.range([height, 0]);
 	  
 	}
 
-	console.dir(stats);
+	
+
+	var points = dimensions.map(function(p){
+		return [x(p), y[p](data[p])];
+	});
+
+	var r_axis = 0.10*(points[1][0] - points[0][0]),
+	l_axis = 0.90*(points[1][0] - points[0][0]);
+
+	
 	background = svg.append("g").attr("class", "background")
 	                            .selectAll("path").data(cars)
 	                            .enter().append("path").attr("d", path);

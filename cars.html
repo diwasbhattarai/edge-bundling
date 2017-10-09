@@ -52,10 +52,10 @@ svg {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="cars-parallel-coordinates.js"></script>
 <p>
-    <input id="power" type="checkbox"> Power (Non-uniform; Skewed; 2-scales) </input>
+    <input id="power" type="checkbox" style="display:hidden;"> Power (Non-uniform; Skewed; 2-scales) </input>
 </p>
 <p>
-    <input id="t0t60" type="checkbox"> 0-60 mph(s) (Non-uniform; ~Normal; 3-scales) </input>
+    <input id="t0t60" type="checkbox" style="display:hidden;"> 0-60 mph(s) (Non-uniform; ~Normal; 3-scales) </input>
 </p>
 
 <script>
@@ -523,7 +523,7 @@ if (!normal){
 
 
 }else{
-    console.log('0 to 60 is normal distribution');
+    
 
     domain2 = [stat.min(), mean - stat.stdev(), mean + stat.stdev(), stat.max()];
     range2  = [0, 25, 75, 100];
