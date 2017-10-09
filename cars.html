@@ -44,24 +44,31 @@ svg {
 
 </style>
 <body>
-<script src="jstat.js"></script>
+<p>
+    <span> Select type of edge bundling: 
+        <select class="bundlingSelection">
+                <option value="curves">Curves</option>
+                <option value="strip">Strip</option>
+              </select>
+            </span>
+            </p>
+
+<!-- <script src="jstat.js"></script> -->
 <script
   src="https://code.jquery.com/jquery-3.2.1.min.js"
   crossorigin="anonymous"></script>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="cars-parallel-coordinates.js"></script>
-<p>
-    <input id="power" type="checkbox" style="display:hidden;"> Power (Non-uniform; Skewed; 2-scales) </input>
-</p>
-<p>
-    <input id="t0t60" type="checkbox" style="display:hidden;"> 0-60 mph(s) (Non-uniform; ~Normal; 3-scales) </input>
-</p>
+<script src="edge-strip-cars-parallel-coordinates.js"></script>
+
+
 
 <script>
 
-var cars = [
+    
 
+var cars = [
 {"name": "AMC Ambassador Brougham", "economy (mpg)":13, "cylinders":8, "displacement (cc)":360, "power (hp)":175, "weight (lb)":3821, "t0t60 mph(s)":11, "year":73},
 {"name": "AMC Ambassador DPL", "economy (mpg)":15, "cylinders":8, "displacement (cc)":390, "power (hp)":190, "weight (lb)":3850, "t0t60 mph(s)":8.5, "year":70},
 {"name": "AMC Ambassador SST", "economy (mpg)":17, "cylinders":8, "displacement (cc)":304, "power (hp)":150, "weight (lb)":3672, "t0t60 mph(s)":11.5, "year":72},
@@ -467,97 +474,25 @@ var cars = [
             ];
 
 var keys = _.keys(cars[0]);
-var number_of_scales = _.map(keys, function(k) {return 1;}); // default all axis 1 scale
-var type_of_scaling  = _.map(keys, function(k) {return "naive";}); // default all axis 1 scale
 
-var min_max = _.map(keys, function(k){
-   var all_values = _.pluck(cars, k);
-   return [_.min(all_values), _.max(all_values)];
-});
-
-var all_power = _.pluck(cars, 'power (hp)');
-var stat = jStat(all_power);
-
-var median = stat.median();
-var mean = stat.mean();
-var skewness = stat.skewness(); // +ve right skewness; -ve left skewness; 0 normal
-var skw_threshold = 0.3; // less than which on both side makes this assume normal distribution
-
-var normal =  Math.abs(skewness) < skw_threshold;
-var domain = [];
-var range  = [];
-if (!normal){
-    var rightSkwd = skewness > 0;
-
-    if (rightSkwd){
-        // min, median + 2 * stdev, max
-        domain = [stat.min (), mean + stat.stdev(), stat.max()];
-        range  = [0, 75, 100];
-    } else {
-        // left skewed
-    }
-
-} else {
-    console.log("power normal");
-}
-
-// 0-60 mph(s)
-var all_power = (function(){
-    d = [];
-    for (c in cars){
-        d.push(cars[c]['t0t60 mph(s)']);
-    }
-    return d;
-})();
-
-var stat = jStat(all_power);
-
-var median = stat.median();
-var mean = stat.mean();
-var skewness = stat.skewness(); // +ve right skewness; -ve left skewness; 0 normal
-
-var normal =  Math.abs(skewness) < skw_threshold;
-var domain2 = [];
-var range2  = [];
-if (!normal){
-
-
-}else{
-    
-
-    domain2 = [stat.min(), mean - stat.stdev(), mean + stat.stdev(), stat.max()];
-    range2  = [0, 25, 75, 100];
-}
 
 
 var popt = {
-  'categorical':["name", "colour"],
-    'power (hp)':[domain, range],
-    't0t60 mph(s)':[domain2, range2]
+  
 };
-buildParallelCoordinates(cars, popt, []);
 
-function toggleLogic() {
 
-   var toggle_array = [];
+$(".bundlingSelection").on("change", function(){
+        if (this.value.toLowerCase() === "curves"){
+            buildParallelCoordinates(cars, popt, []);
+        } else {
+            buildParallelCoordinatesStrip(cars, popt, []);
+        }
+    });
 
-   if ($("#power").is(":checked")){
-       toggle_array.push('power (hp)');
-   }
+buildParallelCoordinates(cars, popt, []); // by default render curves
 
-   if ($("#t0t60").is(":checked")){
-       toggle_array.push('t0t60 mph(s)');
-   }
 
-   console.log(toggle_array);
-   $("#mainSvgID").remove();
-   buildParallelCoordinates(cars, popt, toggle_array);
-}
 
-$(document).ready(function(){
-   $('#power').click(toggleLogic);
 
-   $('#t0t60').click(toggleLogic);
-
-});
 </script>

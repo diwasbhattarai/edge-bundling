@@ -2,7 +2,7 @@ function buildParallelCoordinates(data, popt, toggleArray){
 	var margin = {top: 30, right: 10, bottom: 10, left: 10},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
-
+	console.log("curves");
 	var x = d3.scalePoint().range([0, width]),
 	    y = {};
 
@@ -14,7 +14,7 @@ function buildParallelCoordinates(data, popt, toggleArray){
 			
 
 	var clusterScale = 0.15;
-
+	$("#mainSvgID").remove();
 	var svg = d3.select("body").append("svg").attr("id","mainSvgID")
 	    .attr("width", width + margin.left + margin.right)
 	    .attr("height", height + margin.top + margin.bottom)
@@ -110,7 +110,7 @@ function buildParallelCoordinates(data, popt, toggleArray){
 	}
 
 	var dimensions  = d3.keys(data[0]);
-	dimensions = ["displacement (cc)", "power (hp)", "weight (lb)", "year"]
+	dimensions = ["displacement (cc)", "power (hp)", "weight (lb)"]
 	//dim = _.difference(dimensions, categorical);
 	
 
@@ -124,7 +124,7 @@ function buildParallelCoordinates(data, popt, toggleArray){
 		l = _.unique(l);
 		var avg = _.reduce(l, function(m, a){return m+a})/l.length;
 		var l1 = _.filter(l, function(p){return p <= avg;}),
-				l2 = _.filter(l, function(p){return p > avg;})
+			l2 = _.filter(l, function(p){return p > avg;})
 
 
 		stats[d] = [{
