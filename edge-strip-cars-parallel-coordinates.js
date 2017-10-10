@@ -121,26 +121,32 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				path.bezierCurveTo(cpx1, uminp, cpx1, umin, points[i][0]+l_axis, umin);
 
 				path.moveTo(points[i][0]+r_axis, lmaxp);
-				path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, lmax);
+				// path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, lmax);
+				path.lineTo(points[i][0]+l_axis, lmax);
 
 				path.moveTo(points[i][0]+r_axis, lminp);
-				path.bezierCurveTo(cpx1, lminp, cpx1, lmin, points[i][0]+l_axis, lmin);
+				// path.bezierCurveTo(cpx1, lminp, cpx1, lmin, points[i][0]+l_axis, lmin);
+				path.lineTo(points[i][0]+l_axis, lmin);
 
 				// crosses
 				path.moveTo(points[i][0]+r_axis, umaxp);
-				path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, lmax);
+				// path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, lmax);
+				path.lineTo(points[i][0]+l_axis, lmax);
 
 				path.moveTo(points[i][0]+r_axis, uminp);
-				path.bezierCurveTo(cpx1, uminp, cpx1, umin, points[i][0]+l_axis, lmin);
+				// path.bezierCurveTo(cpx1, uminp, cpx1, umin, points[i][0]+l_axis, lmin);
+				path.lineTo(points[i][0]+l_axis, lmin);
 
 				path.moveTo(points[i][0]+r_axis, lmaxp);
-				path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, umax);
+				// path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, umax);
+				path.lineTo(points[i][0]+l_axis, umax);
 
 				path.moveTo(points[i][0]+r_axis, lminp);
-				path.bezierCurveTo(cpx1, lminp, cpx1, lmin, points[i][0]+l_axis, umin);
+				// path.bezierCurveTo(cpx1, lminp, cpx1, lmin, points[i][0]+l_axis, umin);
+				path.lineTo(points[i][0]+l_axis, umin);
 
 				// bundling axis to data axis
-				cpx1 = l_axis+.50*r_axis;
+				cpx1 = points[i][0]+l_axis+.50*r_axis;
 				path.moveTo(points[i][0]+l_axis, umax);
 				path.bezierCurveTo(cpx1, umax, cpx1, scale(stats[dimensions[i+1]][1].max), points[i+1][0], scale(stats[dimensions[i+1]][1].max));
 				
