@@ -1,8 +1,9 @@
 function buildParallelCoordinatesStrip(data, popt, toggleArray){
-	var margin = {top: 30, right: 10, bottom: 10, left: 10},
+
+    var margin = {top: 30, right: 10, bottom: 10, left: 10},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
-console.log("strip");
+	console.log("curves");
 	var x = d3.scalePoint().range([0, width]),
 	    y = {};
 
@@ -14,7 +15,7 @@ console.log("strip");
 			
 
 	var clusterScale = 0.15;
-    $("#mainSvgID").remove();
+	$("#mainSvgID").remove();
 	var svg = d3.select("body").append("svg").attr("id","mainSvgID")
 	    .attr("width", width + margin.left + margin.right)
 	    .attr("height", height + margin.top + margin.bottom)
@@ -51,18 +52,32 @@ console.log("strip");
 			var lmean = scale(stats[dimensions[i]][0].mean),
 					lmax = stats[dimensions[i]][0].max,
 					lmin = stats[dimensions[i]][0].min;
-					
+            
+                    
+			var pp = d[dimensions[i]],
+				ppp = d[dimensions[i+1]];
+            
+
+
 			var cpx1 = points[i][0]+r_axis/2;
 			var y1 = umean + clusterScale * (points[i][1] - umean);
 			var ly1 = lmean + clusterScale * (points[i][1] - lmean);
 			
+			var lmax2 = stats[dimensions[i+1]][0].max;
+			var lmin2 = stats[dimensions[i+1]][0].min;
+			var umax2 = stats[dimensions[i+1]][1].max;
+			var umin2 = stats[dimensions[i+1]][1].min;
 			
 
 			// x0 + s(xA−x0)
 			// path to first bundle axis
 			var yp = (d[dimensions[i]] > lmax) ? y1 : ly1;
+			if ((pp == umax || pp === umin || pp === lmax || pp === lmin) ||
+			    (ppp == umax2 || ppp === umin2 || ppp === lmax2 || ppp === lmin2)){
+                if (i !== 0) path.moveTo(points[i][0], points[i][1]);
+                path.bezierCurveTo(cpx1, points[i][1], cpx1, yp, points[i][0]+r_axis, yp);
+            } 
 			
-			path.bezierCurveTo(cpx1, points[i][1], cpx1, yp, points[i][0]+r_axis, yp);
 									  
 			
 
@@ -80,15 +95,20 @@ console.log("strip");
 			// path to second bundle axis of next dimension
 			var a = umean + clusterScale * (points[i+1][1] - umean);
 			var b = lmean + clusterScale * (points[i+1][1] - lmean);
-			var yy = (d[dimensions[i+1]] > lmax) ? a : b;
+            var yy = (d[dimensions[i+1]] > lmax) ? a : b;
+            
+            pp = d[dimensions[i+1]];
+            // if ((pp == umax || pp === umin || pp === lmax || pp === lmin)) {
+                path.bezierCurveTo(cpx1, yp, cpx1, yy, 
+                                points[i][0]+l_axis, yy);
+                
+                    
+                var cpx2 = points[i+1][0]-r_axis/2
+                path.bezierCurveTo(cpx2, yy, cpx2, points[i+1][1], 
+                                points[i+1][0], points[i+1][1]);
+            // }
 
-			path.bezierCurveTo(cpx1, yp, cpx1, yy, 
-				               points[i][0]+l_axis, yy);
-			
-				
-			var cpx2 = points[i+1][0]-r_axis/2
-			path.bezierCurveTo(cpx2, yy, cpx2, points[i+1][1], 
-			                   points[i+1][0], points[i+1][1]);
+            // path.closePath();
 			
 			
 		}
