@@ -1,6 +1,6 @@
 function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
-    var margin = {top: 30, right: 10, bottom: 10, left: 10},
+    var margin = {top: 60, right: 10, bottom: 10, left: 30},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 	console.log("curves");
@@ -68,14 +68,15 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 			var umax2 = stats[dimensions[i+1]][1].max;
 			var umin2 = stats[dimensions[i+1]][1].min;
 			
-
+			var triggered = true;
 			// x0 + s(xA−x0)
 			// path to first bundle axis
 			var yp = (d[dimensions[i]] > lmax) ? y1 : ly1;
 			if ((pp == umax || pp === umin || pp === lmax || pp === lmin) ||
 			    (ppp == umax2 || ppp === umin2 || ppp === lmax2 || ppp === lmin2)){
                 if (i !== 0) path.moveTo(points[i][0], points[i][1]);
-                path.bezierCurveTo(cpx1, points[i][1], cpx1, yp, points[i][0]+r_axis, yp);
+				path.bezierCurveTo(cpx1, points[i][1], cpx1, yp, points[i][0]+r_axis, yp);
+				triggered = false;
             } 
 			
 									  
@@ -98,15 +99,16 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
             var yy = (d[dimensions[i+1]] > lmax) ? a : b;
             
             pp = d[dimensions[i+1]];
-            // if ((pp == umax || pp === umin || pp === lmax || pp === lmin)) {
+           
+				if (triggered) path.moveTo(points[i][0]+r_axis, yp);
                 path.bezierCurveTo(cpx1, yp, cpx1, yy, 
                                 points[i][0]+l_axis, yy);
                 
-                    
+                     if ((pp == umax || pp === umin || pp === lmax || pp === lmin)) {
                 var cpx2 = points[i+1][0]-r_axis/2
                 path.bezierCurveTo(cpx2, yy, cpx2, points[i+1][1], 
                                 points[i+1][0], points[i+1][1]);
-            // }
+            }
 
             // path.closePath();
 			
