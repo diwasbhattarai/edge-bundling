@@ -3,7 +3,6 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
     var margin = {top: 60, right: 10, bottom: 10, left: 30},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
-	console.log("curves");
 	var x = d3.scalePoint().range([0, width]),
 	    y = {};
 
@@ -20,148 +19,53 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	    .attr("width", width + margin.left + margin.right)
 	    .attr("height", height + margin.top + margin.bottom)
 	  .append("g")
-	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	var dimensions  = d3.keys(data[0]);
+	dimensions = ["displacement (cc)", "power (hp)", "weight (lb)"]
+	//dim = _.difference(dimensions, categorical);
+	
+
+	x.domain(dimensions);
+		
 	var firstRun = true;
-	// Returns the path for a given data point.
-	function path(d) {
-		// line (x, y) to (x, y) to (x, y) ...
-		// console.log((dimensions.map(function(p) { return [x(p), y[p](d[p])]; })));
-
-		var points = dimensions.map(function(p){
-			return [x(p), y[p](d[p])];
-		});
-
-		// var r_axis = 0.10*(points[1][0] - points[0][0]),
-		// l_axis = 0.90*(points[1][0] - points[0][0]);
-
-		var path = d3.path()
-		
-		var npoints = [];
-
-		path.moveTo(points[0][0], points[0][1]);
-		for (var i = 0; i < dimensions.length-1; i++){
-			
-			var scale = y[dimensions[i]];
-			
-		
-
-			var umean = scale(stats[dimensions[i]][1].mean),
-					umax = stats[dimensions[i]][1].max,
-					umin = stats[dimensions[i]][1].min;
-			
-			var lmean = scale(stats[dimensions[i]][0].mean),
-					lmax = stats[dimensions[i]][0].max,
-					lmin = stats[dimensions[i]][0].min;
-            
-                    
-			var pp = d[dimensions[i]],
-				ppp = d[dimensions[i+1]];
-            
-
-
-			var cpx1 = points[i][0]+r_axis/2;
-			var y1 = umean + clusterScale * (points[i][1] - umean);
-			var ly1 = lmean + clusterScale * (points[i][1] - lmean);
-			
-			var lmax2 = stats[dimensions[i+1]][0].max;
-			var lmin2 = stats[dimensions[i+1]][0].min;
-			var umax2 = stats[dimensions[i+1]][1].max;
-			var umin2 = stats[dimensions[i+1]][1].min;
-			
-			var triggered = true;
-			// x0 + s(xA−x0)
-			// path to first bundle axis
-			var yp = (d[dimensions[i]] > lmax) ? y1 : ly1;
-			if ((pp == umax || pp === umin || pp === lmax || pp === lmin)){ //||
-			    //(ppp == umax2 || ppp === umin2 || ppp === lmax2 || ppp === lmin2)){
-				if (i !== 0) path.moveTo(points[i][0], points[i][1]);
-				// curve from data axis to first bundle axis
-				path.bezierCurveTo(cpx1, points[i][1], cpx1, yp, points[i][0]+r_axis, yp);
-				triggered = false;
-            } 
-			
-									  
+	function path(d) {	
+			  
 			if (firstRun) {
-
-				cpx1 = (points[i][0] + points[i+1][0])/2;
-				scale = y[dimensions[i+1]];
-				scalep = y[dimensions[i]];
-
-				umean = scale(stats[dimensions[i+1]][1].mean);
-				umax = scale(stats[dimensions[i+1]][1].max);
-				umax = (umean + clusterScale * (umax - umean));
-				umin = scale(stats[dimensions[i+1]][1].min);
-				umin = (umean + clusterScale * (umin - umean));
+				var npoints = [];
 		
-				lmean = scale(stats[dimensions[i+1]][0].mean);
-				lmax = scale(stats[dimensions[i+1]][0].max);
-				lmax = (lmean + clusterScale * (lmax - lmean))
-				lmin = scale(stats[dimensions[i+1]][0].min);
-				lmin = (lmean + clusterScale * (lmin - lmean));
+				for (var i = 0; i < dimensions.length-2; i++){
+					var scale = y[dimensions[i]];
+					
+					var umean = scale(stats[dimensions[i]][1].mean),
+							umax = scale(stats[dimensions[i]][1].max),
+							umin = scale(stats[dimensions[i]][1].min);
+					
+					var lmean = scale(stats[dimensions[i]][0].mean),
+							lmax = scale(stats[dimensions[i]][0].max),
+							lmin = scale(stats[dimensions[i]][0].min);
+					
+					var bumax = umean + clusterScale * (umax - umean),
+						bumin = umean + clusterScale * (umin - umean),
+						blmax = lmean + clusterScale * (lmax - lmean),
+						blmin = lmean + clusterScale * (lmin - lmean);
+
+					var bezier_cpx = x(dimensions[i]) + r_axis/2;
+					
+					var path = d3.path();
+					path.moveTo(x(dimensions[i]), umax);
+					path.bezierCurveTo(bezier_cpx, umax, bezier_cpx, bumax, x(dimensions[i])+r_axis, bumax);
+					path.lineTo(x(dimensions[i])+r_axis, bumin);
+					path.bezierCurveTo(bezier_cpx, bumin, bezier_cpx, umin, x(dimensions[i]), umin);
+					path.closePath();
 
 
-				var lmeanp = scalep(stats[dimensions[i]][0].mean) 
-				var lmaxp = scalep(stats[dimensions[i]][0].max);
-				lmaxp = (lmeanp + clusterScale * (lmaxp - lmeanp));
-				var lminp = scalep(stats[dimensions[i]][0].min);
-				lminp = (lmeanp + clusterScale * (lminp - lmeanp));
-
-				var umeanp = scalep(stats[dimensions[i]][1].mean);
-				var umaxp = scalep(stats[dimensions[i]][1].max);
-				umaxp = (umeanp + clusterScale * (umaxp - umeanp));
-				var uminp = scalep(stats[dimensions[i]][1].min);
-				uminp = (umeanp + clusterScale * (uminp - umeanp));
-				
-				// curve from first bundle axis to bundle axis of next dimension
-				// straights
-				path.moveTo(points[i][0]+r_axis, umaxp);
-				path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, umax);
-
-				path.moveTo(points[i][0]+r_axis, uminp);
-				path.bezierCurveTo(cpx1, uminp, cpx1, umin, points[i][0]+l_axis, umin);
-
-				path.moveTo(points[i][0]+r_axis, lmaxp);
-				// path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, lmax);
-				path.lineTo(points[i][0]+l_axis, lmax);
-
-				path.moveTo(points[i][0]+r_axis, lminp);
-				// path.bezierCurveTo(cpx1, lminp, cpx1, lmin, points[i][0]+l_axis, lmin);
-				path.lineTo(points[i][0]+l_axis, lmin);
-
-				// crosses
-				path.moveTo(points[i][0]+r_axis, umaxp);
-				// path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, lmax);
-				path.lineTo(points[i][0]+l_axis, lmax);
-
-				path.moveTo(points[i][0]+r_axis, uminp);
-				// path.bezierCurveTo(cpx1, uminp, cpx1, umin, points[i][0]+l_axis, lmin);
-				path.lineTo(points[i][0]+l_axis, lmin);
-
-				path.moveTo(points[i][0]+r_axis, lmaxp);
-				// path.bezierCurveTo(cpx1, umaxp, cpx1, umax, points[i][0]+l_axis, umax);
-				path.lineTo(points[i][0]+l_axis, umax);
-
-				path.moveTo(points[i][0]+r_axis, lminp);
-				// path.bezierCurveTo(cpx1, lminp, cpx1, lmin, points[i][0]+l_axis, umin);
-				path.lineTo(points[i][0]+l_axis, umin);
-
-				// bundling axis to data axis
-				cpx1 = points[i][0]+l_axis+.50*r_axis;
-				path.moveTo(points[i][0]+l_axis, umax);
-				path.bezierCurveTo(cpx1, umax, cpx1, scale(stats[dimensions[i+1]][1].max), points[i+1][0], scale(stats[dimensions[i+1]][1].max));
-				
-				path.moveTo(points[i][0]+l_axis, umin);
-				path.bezierCurveTo(cpx1, umin, cpx1, scale(stats[dimensions[i+1]][1].min), points[i+1][0], scale(stats[dimensions[i+1]][1].min));
-
-				path.moveTo(points[i][0]+l_axis, lmax);
-				path.bezierCurveTo(cpx1, lmax, cpx1, scale(stats[dimensions[i+1]][0].max), points[i+1][0], scale(stats[dimensions[i+1]][0].max));
-
-				path.moveTo(points[i][0]+l_axis, lmin);
-				path.bezierCurveTo(cpx1, lmin, cpx1, scale(stats[dimensions[i+1]][0].min), points[i+1][0], scale(stats[dimensions[i+1]][0].min));
-
-				// path.closePath();
-
-		
+					// path = d3.path();
+					path.moveTo(x(dimensions[i]), lmax);
+					path.bezierCurveTo(bezier_cpx, lmax, bezier_cpx, blmax, x(dimensions[i])+r_axis, blmax);
+					path.lineTo(x(dimensions[i])+r_axis, blmin);
+					path.bezierCurveTo(bezier_cpx, blmin, bezier_cpx, lmin, x(dimensions[i]), lmin);
+					path.closePath();
 			}
 			
 				
@@ -181,12 +85,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	  });
 	}
 
-	var dimensions  = d3.keys(data[0]);
-	dimensions = ["displacement (cc)", "power (hp)", "weight (lb)"]
-	//dim = _.difference(dimensions, categorical);
 	
-
-	x.domain(dimensions);
 	var stats = {};
 	for (var i in dimensions){
 		var d = dimensions[i];
@@ -226,19 +125,110 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	l_axis = 0.90*(points[1][0] - points[0][0]);
 
 	
-	background = svg.append("g").attr("class", "background")
-	                            .selectAll("path").data(cars)
-	                            .enter().append("path").attr("d", path);
+	// background = svg.append("g").attr("class", "background")
+	//                             .selectAll("path").data(cars)
+	//                             .enter().append("path").attr("d", path);
 
-	foreground = svg.append("g").attr("class", "foreground")
-	                            .selectAll("path").data(cars)
-	                            .enter().append("path").attr("d", path);
+
+	// direction '1' for data_axis to bundle_axis, -1 for bundle_axis to data_axis, 0 for bundle to bundle
+	function drawClusterPolygon(data_axis, bundle_axis, bezier_cpx, moveTox, direction){ 
+		var path = d3.path();
+		path.moveTo(moveTox, data_axis.max);
+		path.bezierCurveTo(bezier_cpx, data_axis.max, bezier_cpx, bundle_axis.max, moveTox+r_axis, bundle_axis.max);
+		path.lineTo(moveTox+r_axis, bundle_axis.min);
+		path.bezierCurveTo(bezier_cpx, bundle_axis.min, bezier_cpx, data_axis.min, moveTox, data_axis.min);
+		
+		path.closePath();
+
+		foreground = svg.append("g").attr("class", "foreground");
+		foreground.attr("class", "d"+i+"_c"+j).append("path").attr("d", path);
+
+		// draw tentacles and other side face
+
+		// foreground = svg.append("g").attr("class", "foreground")
+
+	}
+
+
+	function drawLeftmostClusters(data_axis, bundle_axis){
+		
+		var bezier_cpx = x(dimensions[0]) + r_axis/2;
+		var moveTox = x(dimensions[0]);
+
+		for (var i = 0; i < data_axis.length; i++){
+			drawClusterPolygon(data_axis[i], bundle_axis[i], bezier_cpx, moveTox, i);
+		}
+
+	}
+
+
+	function drawLeftClustersTentacles(clustIdx){
+
+	}
+	function drawLeftClustersToNextDimension(s){
+
+	}
+
+	function path_cluster(dimIdx, clustIdx){
+
+		var dim = dimensions[dimIdx]; 
+		var nextdim = dimensions[dimIdx+1];
+		var s   = stats[clustIdx];
+
+		var scale = y[dim];
+		var umean = scale(stats[dim][1].mean),
+			umax = scale(stats[dim][1].max),
+			umin = scale(stats[dim][1].min);
+
+		var lmean = scale(stats[dim][0].mean),
+			lmax = scale(stats[dim][0].max),
+			lmin = scale(stats[dim][0].min);
+
+		var bumax = umean + clusterScale * (umax - umean),
+			bumin = umean + clusterScale * (umin - umean),
+			bumean = (bumax + bumean)/2;
+			blmax = lmean + clusterScale * (lmax - lmean),
+			blmin = lmean + clusterScale * (lmin - lmean),
+			blmean = (blmax + blmin)/2;
+
+		
+
+		var data_axis = [{mean: umean, max: umax, min:umin},
+						 {mean: lmean, max:lmax, min:lmin}];
+
+		var bundle_axis = [{max: bumax, min:bumin, mean:bumean},
+						   {max:blmax, min:blmin, mean:blmean}];
+
+
+		if(dimIdx === 0)
+				drawLeftmostClusters(data_axis, bundle_axis);
+				drawLeftClustersTentacles(clustIdx);
+				drawLeftClustersToNextDimension(stats[dimIdx+1]);
+				
+			// case dimensions.length:
+			// 	drawRightmostClusters();
+			// 	break;
+			// default:
+			// 	drawMiddleClusters();
+		
+	}
+	
+	for (var i = 0; i<dimensions.length-1; i++){
+		var d = dimensions[i];
+		var s = stats[d];
+		for (var j = 0; j < s.length; j++){
+			
+			path_cluster(i, j);
+		}
+	}
+	
+	                            
 
 	var g = svg.selectAll(".dimension").data(dimensions)
 	           .enter().append("g").attr("class", "dimension")
 						 .attr("transform", function(d){return "translate("+x(d)+")";});
 						 
-  var l_g =	svg.selectAll(".dimension-r").data(dimensions)
+    var l_g =	svg.selectAll(".dimension-r").data(dimensions)
 	           .enter().filter(function(d){
 							return x(d) < width;
 						}).append("g").attr("class", "dimension-r")
