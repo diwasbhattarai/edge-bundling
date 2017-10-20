@@ -7,7 +7,8 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	    y = {};
 
 	var line = d3.line(),
-	    axis = d3.axisLeft(),
+		axis = d3.axisLeft(),
+		alphaScaling = 0.75,
 	    background,
 			foreground;
 			
@@ -74,45 +75,67 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		return path;
 	}
 
-	// Handles a brush event, toggling the display of foreground lines.
-	function brush() {
-	  var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); }),
-	      extents = actives.map(function(p) { return y[p].brush.extent(); });
-	  foreground.style("display", function(d) {
-	    return actives.every(function(p, i) {
-	      return extents[i][0] <= d[p] && d[p] <= extents[i][1];
-	    }) ? null : "none";
-	  });
-	}
-
-	
+	var clusters = {
+		"displacement (cc)":[{"min": 68, "max": 120},{"min": 121, "max": 300},{"min": 301, "max": 455}],
+		"power (hp)":[{"min": 46, "max": 100},{"min": 101, "max": 150},{"min": 151, "max": 175},{"min": 176, "max": 230}],
+		"weight (lb)":[{"min": 1613, "max": 1800},{"min": 1801, "max": 2500},{"min": 2501, "max": 5140}],
+		"economy (mpg)":[{"min": 9, "max": 15},{"min": 16, "max": 35},{"min": 36, "max": 46.6}]
+	};
 	var stats = {};
-	for (var i in dimensions){
-		var d = dimensions[i];
+	var maxCount = -1;
+	for (var i = 0; i < dimensions.length; i++){
+		var d       = dimensions[i];
+		var cluster = clusters[d];
+		stats[d]    = [];
+
+		var points = _.pluck(cars, d);
+		points     = _.unique(points);
+		points     = _.sortBy(points, function(p){return +p;});
 		
-		var l = _.pluck(cars, d)
-		l = _.sortBy(l, function(p){return +p})
-		l = _.unique(l);
-		var avg = _.reduce(l, function(m, a){return m+a})/l.length;
-		var l1 = _.filter(l, function(p){return p <= avg;}),
-			l2 = _.filter(l, function(p){return p > avg;}),
-			m = _.max([l1.length, l2.length]);
 
+		for (var j = 0; j < cluster.length; j++){
+			var c = cluster[j];
+			var clusterCount = _.filter(points, function(row){
+				return row >= c.min && row <= c.max;
+			}).length;
 
-		stats[d] = [{
-			"mean": _.reduce(l1, function(m, a){return m+a})/l1.length,
-			"max": _.max(l1),
-			"min": _.min(l1),
-			"count": l1.length,
-			"maxCount": m
-		},
-		{
-			"mean": _.reduce(l2, function(m, a){return m+a})/l2.length,
-			"max": _.max(l2),
-			"min": _.min(l2),
-			"count": l2.length,
-			"maxCount": m
-		}]
+			stats[d].push({
+				min: c.min, max: c.max, mean: (c.min+c.max)/2, count: clusterCount
+			});
+
+			if (maxCount < clusterCount) maxCount = clusterCount;
+		}
+		
+		for (j = 0; j < cluster.length; j++){
+			stats[d][j].maxCount = maxCount;
+		}
+		
+
+		// if (d === "displacement (cc)"){
+		// 	var count = _.filter(l, function(a){return +a >= l[0] && +a <= 120}).length;
+		// 	stats[d] = [{
+		// 		"min": l[0],
+		// 		"max": 120,
+		// 		"mean": (l[0]+120)/2,
+		// 		"count": _.filter(l, function(a){return +a >= l[0] && +a <= 120}).length,
+		// 		"maxCount": 
+		// 	}];
+		// }
+
+		// stats[d] = [{
+		// 	"mean": _.reduce(l1, function(m, a){return m+a})/l1.length,
+		// 	"max": _.max(l1),
+		// 	"min": _.min(l1),
+		// 	"count": l1.length,
+		// 	"maxCount": m
+		// },
+		// {
+		// 	"mean": _.reduce(l2, function(m, a){return m+a})/l2.length,
+		// 	"max": _.max(l2),
+		// 	"min": _.min(l2),
+		// 	"count": l2.length,
+		// 	"maxCount": m
+		// }]
 
 		y[d] = d3.scaleLinear();
 		y[d].domain(d3.extent(cars, function(datapoint){ return +datapoint[d];}))
@@ -130,12 +153,6 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	l_axis = 0.90*(points[1][0] - points[0][0]);
 
 	
-	// background = svg.append("g").attr("class", "background")
-	//                             .selectAll("path").data(cars)
-	//                             .enter().append("path").attr("d", path);
-
-
-	
 	function drawClusterPolygon(data_axis, bundle_axis, bezier_cpx, moveTox, dimIdx, clustIdx){ 
 		var path = d3.path();
 		path.moveTo(moveTox, data_axis.max);
@@ -147,9 +164,8 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx)
-		.append("path").attr("d", path).attr("style", "opacity:"+data_axis.count);;
+		.append("path").attr("d", path).attr("style", "opacity:"+alphaScaling*data_axis.count);
 		$(".d-"+dimIdx+"_ct"+clustIdx).on('click', function(e){console.log('hello '+dimensions[dimIdx]+clustIdx);});
-		// foreground.attr("class", "foreground d"+i+"_c"+j).append("path").attr("d", path);
 	}
 
 
@@ -181,7 +197,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+1+"_ct"+clustIdx)
-		.append("path").attr("d", path).attr("style", "opacity:"+data_axis.count);
+		.append("path").attr("d", path).attr("style", "opacity:"+alphaScaling*data_axis.count);
 		$(".d-"+dimIdx+1+"_ct"+clustIdx).on('click', function(e){console.log('hello '+dim+clustIdx);});
 	}
 
@@ -203,6 +219,8 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		var data_axis = {mean: mean, max: max, min:min, count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount};
 		var bundle_axis = {max: bmax, min:bmin, mean:bmean, count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount};
 		
+
+		return [[data_axis, bundle_axis]];
 
 		scale = y[nextdim];
 		var mean2 = scale(stats[nextdim][clustIdx].mean),
@@ -238,19 +256,25 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		
 		path.closePath();
 
+		// calculate opacity by using bundle_axis and nbundle_axis max, min 
+		// and use it with cars dataset.
+
+
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx)
-				  .append("path").attr("d", path).attr("style", "opacity: "+bundle_axis.opacity);
+				  .append("path").attr("d", path).attr("style", "opacity: "+alphaScaling*bundle_axis.opacity);
 		$(".d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx).on('click', function(e){console.log('hello '+dim+clustIdx+" "+nClustIdx);});
 	}
 
 	function path_cluster(dimIdx, clustIdx){
 		// contains array [currentdim, nextdim]. currentdim/nextdim = [dataaxis, bundleaxis]
+		// dataaxis/bundleaxis = {mean: mean2, max: max2, min:min2, count:c/maxcount}
 		var clusterData  = utility(dimIdx, clustIdx); 
 
 		var nClusters = stats[dimensions[[1+dimIdx]]];
 		for (var i = 0; i < nClusters.length; i++){
 			var n = nClusters[i];
+			
 			var scale = y[dimensions[1+dimIdx]];
 			var mean = scale(n.mean),
 				max = scale(n.max),
@@ -275,10 +299,15 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 			];
 
 			drawLeftClustersTentacles(bundleAxis[0], bundleAxis[1], dimensions[dimIdx], dimensions[dimIdx+1], clustIdx, i, dimIdx);
+			drawLeftClustersToNextDimension([
+											 {mean: mean, max: max, min: min, opacity:n.count/n.maxCount},
+											 {mean:bmean, max:bmax, min:bmin, opacity:n.count/n.maxCount},], 
+											 dimensions[dimIdx+1], dimIdx, clustIdx);
 		}
 		
 		drawLeftmostClusters(clusterData[0], dimensions[dimIdx], dimIdx, clustIdx);
-		drawLeftClustersToNextDimension(clusterData[1], dimensions[dimIdx+1], dimIdx, clustIdx);
+		
+		
 		
 	}
 	
@@ -290,8 +319,6 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		}
 	}
 	
-	                            
-
 	var g = svg.selectAll(".dimension").data(dimensions)
 	           .enter().append("g").attr("class", "dimension")
 						 .attr("transform", function(d){return "translate("+x(d)+")";});
