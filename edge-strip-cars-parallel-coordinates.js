@@ -95,18 +95,23 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		l = _.unique(l);
 		var avg = _.reduce(l, function(m, a){return m+a})/l.length;
 		var l1 = _.filter(l, function(p){return p <= avg;}),
-			l2 = _.filter(l, function(p){return p > avg;})
+			l2 = _.filter(l, function(p){return p > avg;}),
+			m = _.max([l1.length, l2.length]);
 
 
 		stats[d] = [{
 			"mean": _.reduce(l1, function(m, a){return m+a})/l1.length,
 			"max": _.max(l1),
-			"min": _.min(l1)
+			"min": _.min(l1),
+			"count": l1.length,
+			"maxCount": m
 		},
 		{
 			"mean": _.reduce(l2, function(m, a){return m+a})/l2.length,
 			"max": _.max(l2),
-			"min": _.min(l2)
+			"min": _.min(l2),
+			"count": l2.length,
+			"maxCount": m
 		}]
 
 		y[d] = d3.scaleLinear();
@@ -142,7 +147,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx)
-		.append("path").attr("d", path);
+		.append("path").attr("d", path).attr("style", "opacity:"+data_axis.count);;
 		$(".d-"+dimIdx+"_ct"+clustIdx).on('click', function(e){console.log('hello '+dimensions[dimIdx]+clustIdx);});
 		// foreground.attr("class", "foreground d"+i+"_c"+j).append("path").attr("d", path);
 	}
@@ -176,7 +181,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+1+"_ct"+clustIdx)
-		.append("path").attr("d", path);
+		.append("path").attr("d", path).attr("style", "opacity:"+data_axis.count);
 		$(".d-"+dimIdx+1+"_ct"+clustIdx).on('click', function(e){console.log('hello '+dim+clustIdx);});
 	}
 
@@ -195,8 +200,8 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 			bmin = mean + clusterScale * (min - mean),
 			bmean = (bmax + bmin)/2;
 
-		var data_axis = {mean: mean, max: max, min:min};
-		var bundle_axis = {max: bmax, min:bmin, mean:bmean};
+		var data_axis = {mean: mean, max: max, min:min, count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount};
+		var bundle_axis = {max: bmax, min:bmin, mean:bmean, count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount};
 		
 
 		scale = y[nextdim];
@@ -208,8 +213,10 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		bmin2 = mean2 + clusterScale * (min2 - mean2),
 		bmean2 = (bmax + bmin)/2;
 
-		var ndata_axis = {mean: mean2, max: max2, min:min2};
-		var nbundle_axis = {max: bmax2, min:bmin2, mean:bmean2};
+		var ndata_axis = {mean: mean2, max: max2, min:min2, 
+			count:stats[nextdim][clustIdx].count/stats[nextdim][clustIdx].maxCount};
+		var nbundle_axis = {max: bmax2, min:bmin2, mean:bmean2, 
+			count:stats[nextdim][clustIdx].count/stats[nextdim][clustIdx].maxCount};
 
 		return [[data_axis, bundle_axis], [ndata_axis, nbundle_axis]];
 	}
@@ -217,7 +224,9 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	function drawLeftClustersTentacles(bundle_axis, nbundle_axis, dim, ndim, clustIdx, nClustIdx, dimIdx){
 		// var bundle_axis  = clusterData[0][1];
 		// var nbundle_axis = clusterData[1][1];
-// debugger;
+		
+		var opacity = bundle_axis.count;
+
 		var bezier_cpx = x(dim) + l_axis/2;
 		var moveTox = x(dim) + r_axis;
 
@@ -231,7 +240,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx)
-				  .append("path").attr("d", path);
+				  .append("path").attr("d", path).attr("style", "opacity: "+bundle_axis.opacity);
 		$(".d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx).on('click', function(e){console.log('hello '+dim+clustIdx+" "+nClustIdx);});
 	}
 
@@ -261,7 +270,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				pbmean = (pbmax + pbmin) / 2;
 			
 			var bundleAxis = [
-				{	mean: pbmean, max: pbmax, min: pbmin },
+				{	mean: pbmean, max: pbmax, min: pbmin, opacity: clusterData[0][0].count/clusterData[0][0].maxCount },
 				{   mean: bmean,  max: bmax,  min: bmin    }
 			];
 
