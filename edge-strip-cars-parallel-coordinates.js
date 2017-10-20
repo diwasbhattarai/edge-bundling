@@ -156,28 +156,6 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		drawClusterPolygon(data_axis, bundle_axis, bezier_cpx, moveTox, 1);
 	}
 
-
-	function drawLeftClustersTentacles(clusterData, dim, ndim, clustIdx){
-		var bundle_axis  = clusterData[0][1];
-		var nbundle_axis = clusterData[1][1];
-
-		var bezier_cpx = x(dim) + l_axis/2;
-		var moveTox = x(dim) + r_axis;
-
-		// drawClusterPolygon(bundle_axis, nbundle_axis, bezier_cpx, moveTox, 0)
-		var path = d3.path();
-		path.moveTo(moveTox, bundle_axis.max);
-		path.lineTo(moveTox+l_axis-r_axis, nbundle_axis.max);
-		path.lineTo(moveTox+l_axis-r_axis, nbundle_axis.min);
-		path.lineTo(moveTox, bundle_axis.min);
-		
-		path.closePath();
-
-		foreground = svg.append("g");
-		foreground.attr("class", "foreground d"+i+"_ct"+j).append("path").attr("d", path);
-	}
-
-
 	function drawLeftClustersToNextDimension(clusterData, dim){
 		var bundle_axis  = clusterData[1];
 		var data_axis    = clusterData[0];
@@ -232,14 +210,60 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		return [[data_axis, bundle_axis], [ndata_axis, nbundle_axis]];
 	}
 
+	function drawLeftClustersTentacles(bundle_axis, nbundle_axis, clusterData, dim, ndim, clustIdx){
+		// var bundle_axis  = clusterData[0][1];
+		// var nbundle_axis = clusterData[1][1];
+// debugger;
+		var bezier_cpx = x(dim) + l_axis/2;
+		var moveTox = x(dim) + r_axis;
+
+		var path = d3.path();
+		path.moveTo(moveTox, bundle_axis.max);
+		path.lineTo(moveTox+l_axis-r_axis, nbundle_axis.max);
+		path.lineTo(moveTox+l_axis-r_axis, nbundle_axis.min);
+		path.lineTo(moveTox, bundle_axis.min);
+		
+		path.closePath();
+
+		foreground = svg.append("g");
+		foreground.attr("class", "foreground d"+i+"_ct"+j).append("path").attr("d", path);
+	}
 
 	function path_cluster(dimIdx, clustIdx){
 		// contains array [currentdim, nextdim]. currentdim/nextdim = [dataaxis, bundleaxis]
 		var clusterData  = utility(dimIdx, clustIdx); 
 
+		var nClusters = stats[dimensions[[1+dimIdx]]];
+		for (var i = 0; i < nClusters.length; i++){
+			// debugger;
+			var n = nClusters[i];
+			var scale = y[dimensions[1+dimIdx]];
+			var mean = scale(n.mean),
+				max = scale(n.max),
+				min = scale(n.min);
+
+			var bmax = mean + clusterScale * (max - mean),
+				bmin = mean + clusterScale * (min - mean),
+				bmean = (bmax + bmin) / 2;
+			
+			var pscale = y[dimensions[dimIdx]];
+			var pmean = clusterData[0][1].mean,
+				pmax = clusterData[0][1].max,
+				pmin = (clusterData[0][1].min);
+	
+			var pbmax = pmean + clusterScale * (pmax - pmean),
+				pbmin = pmean + clusterScale * (pmin - pmean),
+				pbmean = (pbmax + pbmin) / 2;
+			
+			var bundleAxis = [
+				{	mean: pbmean, max: pbmax, min: pbmin },
+				{   mean: bmean,  max: bmax,  min: bmin    }
+			];
+
+			drawLeftClustersTentacles(bundleAxis[0], bundleAxis[1], clusterData, dimensions[dimIdx], dimensions[dimIdx+1], nClusters[i]);
+		}
 		
 		drawLeftmostClusters(clusterData[0], dimensions[dimIdx]);
-		drawLeftClustersTentacles(clusterData, dimensions[dimIdx], dimensions[dimIdx+1], clustIdx);
 		drawLeftClustersToNextDimension(clusterData[1], dimensions[dimIdx+1]);
 		
 	}
