@@ -83,10 +83,11 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	};
 	var stats = {};
 	var maxCount = -1;
+
 	for (var i = 0; i < dimensions.length; i++){
 		var d       = dimensions[i];
 		var cluster = clusters[d];
-		stats[d]    = [];
+		stats[d]    = []; // hold clusters for each dimension d
 
 		var points = _.pluck(cars, d);
 		points     = _.unique(points);
@@ -109,39 +110,67 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		for (j = 0; j < cluster.length; j++){
 			stats[d][j].maxCount = maxCount;
 		}
-		
-
-		// if (d === "displacement (cc)"){
-		// 	var count = _.filter(l, function(a){return +a >= l[0] && +a <= 120}).length;
-		// 	stats[d] = [{
-		// 		"min": l[0],
-		// 		"max": 120,
-		// 		"mean": (l[0]+120)/2,
-		// 		"count": _.filter(l, function(a){return +a >= l[0] && +a <= 120}).length,
-		// 		"maxCount": 
-		// 	}];
-		// }
-
-		// stats[d] = [{
-		// 	"mean": _.reduce(l1, function(m, a){return m+a})/l1.length,
-		// 	"max": _.max(l1),
-		// 	"min": _.min(l1),
-		// 	"count": l1.length,
-		// 	"maxCount": m
-		// },
-		// {
-		// 	"mean": _.reduce(l2, function(m, a){return m+a})/l2.length,
-		// 	"max": _.max(l2),
-		// 	"min": _.min(l2),
-		// 	"count": l2.length,
-		// 	"maxCount": m
-		// }]
 
 		y[d] = d3.scaleLinear();
 		y[d].domain(d3.extent(cars, function(datapoint){ return +datapoint[d];}))
 			.range([height, 0]);
 	  
 	}
+	// first hold max and min in the loop above. then loop again to calculate opacity(count)
+	for (i = 0; i < dimensions.length-1; i++){
+		var d = dimensions[i],
+			nd = dimensions[i+1];
+		var cluster = clusters[d],
+			ncluster = clusters[dimensions[i+1]];
+		
+		for(j = 0; j < cluster.length; j++){ // loop on current dimension's clusters
+			stats[d][j].tentacles = [];
+			for (var k = 0; k < ncluster.length; k++){  // loop over clusters of next dimension
+
+				var points = _.filter(cars, function(row){
+					return (row[d] >= stats[d][j].min && row[d] <= stats[d][j].max) &&
+							(row[nd] >= stats[nd][k].min && row[nd] <= stats[nd][k].max);
+				});
+				
+				stats[d][j].tentacles.push(points.length);
+
+			}
+
+			var max = _.max(stats[d][j].tentacles);
+			for (k = 0; k < ncluster.length; k++) {
+				stats[d][j].tentacles = _.map(stats[d][j].tentacles, function(tm){ return tm/max;});
+			}
+		}
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+	// create opacity matrix amongst clusters. we can only create triangle matrix and
+	// can disregard diagonal elements.
+	// size of matrix dimension * clusters * dimension2 * clusters?
+	// for (var i = 0; i < dimensions.length-1; i++){
+	// 	var d = dimensions[i];
+	// 	for (var c in clusters[d]) {
+	// 		var maxNum = -1;
+	// 		var clusterTentacles = clusters[dimensions[i+1]];
+	// 		for (var conn in clusterTentacles) {
+	// 			debugger;
+	// 			if (maxNum < conn.length) maxNum = conn.length;
+	// 		}
+	// 		for (conn in clusterTentacles){
+	// 			clusterTentacles[conn].count = maxNum < 0 ? 1 : conn.length/maxNum;
+	// 		}
+	// 	}
+	// }
 
 	
 
@@ -222,27 +251,24 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		return [[data_axis, bundle_axis]];
 
-		scale = y[nextdim];
-		var mean2 = scale(stats[nextdim][clustIdx].mean),
-		max2 = scale(stats[nextdim][clustIdx].max),
-		min2 = scale(stats[nextdim][clustIdx].min);
+		// scale = y[nextdim];
+		// var mean2 = scale(stats[nextdim][clustIdx].mean),
+		// max2 = scale(stats[nextdim][clustIdx].max),
+		// min2 = scale(stats[nextdim][clustIdx].min);
 
-		var bmax2 = mean2 + clusterScale * (max2 - mean2),
-		bmin2 = mean2 + clusterScale * (min2 - mean2),
-		bmean2 = (bmax + bmin)/2;
+		// var bmax2 = mean2 + clusterScale * (max2 - mean2),
+		// bmin2 = mean2 + clusterScale * (min2 - mean2),
+		// bmean2 = (bmax + bmin)/2;
 
-		var ndata_axis = {mean: mean2, max: max2, min:min2, 
-			count:stats[nextdim][clustIdx].count/stats[nextdim][clustIdx].maxCount};
-		var nbundle_axis = {max: bmax2, min:bmin2, mean:bmean2, 
-			count:stats[nextdim][clustIdx].count/stats[nextdim][clustIdx].maxCount};
+		// var ndata_axis = {mean: mean2, max: max2, min:min2, 
+		// 	count:stats[nextdim][clustIdx].count/stats[nextdim][clustIdx].maxCount};
+		// var nbundle_axis = {max: bmax2, min:bmin2, mean:bmean2, 
+		// 	count:stats[nextdim][clustIdx].count/stats[nextdim][clustIdx].maxCount};
 
-		return [[data_axis, bundle_axis], [ndata_axis, nbundle_axis]];
+		// return [[data_axis, bundle_axis], [ndata_axis, nbundle_axis]];
 	}
 
 	function drawLeftClustersTentacles(bundle_axis, nbundle_axis, dim, ndim, clustIdx, nClustIdx, dimIdx){
-		// var bundle_axis  = clusterData[0][1];
-		// var nbundle_axis = clusterData[1][1];
-		
 		var opacity = bundle_axis.count;
 
 		var bezier_cpx = x(dim) + l_axis/2;
@@ -262,9 +288,11 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx)
-				  .append("path").attr("d", path).attr("style", "opacity: "+alphaScaling*bundle_axis.opacity);
+				  .append("path").attr("d", path).attr("style", "opacity: "+alphaScaling*bundle_axis.count);
 		$(".d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx).on('click', function(e){console.log('hello '+dim+clustIdx+" "+nClustIdx);});
 	}
+
+
 	var visitedDim = [];
 	function path_cluster(dimIdx, clustIdx){
 		// contains array [currentdim, nextdim]. currentdim/nextdim = [dataaxis, bundleaxis]
@@ -294,9 +322,10 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				pbmean = (pbmax + pbmin) / 2;
 			
 			var bundleAxis = [
-				{	mean: pbmean, max: pbmax, min: pbmin, count: clusterData[0][0].count/clusterData[0][0].maxCount },
-				{   mean: bmean,  max: bmax,  min: bmin,     }
+				{	mean: pbmean, max: pbmax, min: pbmin, count: clusterData[0][0].count },
+				{   mean: bmean,  max: bmax,  min: bmin,  count: clusterData[0][0].count}
 			];
+			
 
 			drawLeftClustersTentacles(bundleAxis[0], bundleAxis[1], dimensions[dimIdx], dimensions[dimIdx+1], clustIdx, i, dimIdx);
 			if(!_.contains(visitedDim, dimIdx)){
@@ -310,8 +339,6 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		visitedDim.push(dimIdx);
 		
 		drawLeftmostClusters(clusterData[0], dimensions[dimIdx], dimIdx, clustIdx);
-		
-		
 		
 	}
 	
