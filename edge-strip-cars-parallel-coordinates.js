@@ -265,7 +265,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				  .append("path").attr("d", path).attr("style", "opacity: "+alphaScaling*bundle_axis.opacity);
 		$(".d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx).on('click', function(e){console.log('hello '+dim+clustIdx+" "+nClustIdx);});
 	}
-
+	var visitedDim = [];
 	function path_cluster(dimIdx, clustIdx){
 		// contains array [currentdim, nextdim]. currentdim/nextdim = [dataaxis, bundleaxis]
 		// dataaxis/bundleaxis = {mean: mean2, max: max2, min:min2, count:c/maxcount}
@@ -294,16 +294,20 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				pbmean = (pbmax + pbmin) / 2;
 			
 			var bundleAxis = [
-				{	mean: pbmean, max: pbmax, min: pbmin, opacity: clusterData[0][0].count/clusterData[0][0].maxCount },
-				{   mean: bmean,  max: bmax,  min: bmin    }
+				{	mean: pbmean, max: pbmax, min: pbmin, count: clusterData[0][0].count/clusterData[0][0].maxCount },
+				{   mean: bmean,  max: bmax,  min: bmin,     }
 			];
 
 			drawLeftClustersTentacles(bundleAxis[0], bundleAxis[1], dimensions[dimIdx], dimensions[dimIdx+1], clustIdx, i, dimIdx);
-			drawLeftClustersToNextDimension([
-											 {mean: mean, max: max, min: min, opacity:n.count/n.maxCount},
-											 {mean:bmean, max:bmax, min:bmin, opacity:n.count/n.maxCount},], 
-											 dimensions[dimIdx+1], dimIdx, clustIdx);
+			if(!_.contains(visitedDim, dimIdx)){
+				drawLeftClustersToNextDimension([
+					{mean: mean, max: max, min: min, count:n.count/n.maxCount},
+					{mean:bmean, max:bmax, min:bmin, count:n.count/n.maxCount}], 
+					dimensions[dimIdx+1], dimIdx, clustIdx);
+			
+			}
 		}
+		visitedDim.push(dimIdx);
 		
 		drawLeftmostClusters(clusterData[0], dimensions[dimIdx], dimIdx, clustIdx);
 		
