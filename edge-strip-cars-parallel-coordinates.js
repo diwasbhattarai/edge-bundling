@@ -247,9 +247,9 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				bmean = (bmax + bmin) / 2;
 			
 			var pscale = y[dimensions[dimIdx]];
-			var pmean = clusterData[0][1].mean,
-				pmax = clusterData[0][1].max,
-				pmin = (clusterData[0][1].min);
+			var pmean = clusterData[0][0].mean,
+				pmax = (clusterData[0][0].max),
+				pmin = (clusterData[0][0].min);
 	
 			var pbmax = pmean + clusterScale * (pmax - pmean),
 				pbmin = pmean + clusterScale * (pmin - pmean),
