@@ -130,8 +130,8 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 	//                             .enter().append("path").attr("d", path);
 
 
-	// direction '1' for data_axis to bundle_axis, -1 for bundle_axis to data_axis, 0 for bundle to bundle
-	function drawClusterPolygon(data_axis, bundle_axis, bezier_cpx, moveTox, direction){ 
+	
+	function drawClusterPolygon(data_axis, bundle_axis, bezier_cpx, moveTox, dimIdx, clustIdx){ 
 		var path = d3.path();
 		path.moveTo(moveTox, data_axis.max);
 		path.bezierCurveTo(bezier_cpx, data_axis.max, bezier_cpx, bundle_axis.max, moveTox+r_axis, bundle_axis.max);
@@ -141,11 +141,14 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		path.closePath();
 
 		foreground = svg.append("g");
-		foreground.attr("class", "foreground d"+i+"_c"+j).append("path").attr("d", path);
+		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx)
+		.append("path").attr("d", path);
+		$(".d-"+dimIdx+"_ct"+clustIdx).on('click', function(e){console.log('hello '+dimensions[dimIdx]+clustIdx);});
+		// foreground.attr("class", "foreground d"+i+"_c"+j).append("path").attr("d", path);
 	}
 
 
-	function drawLeftmostClusters(clusterData, dim){
+	function drawLeftmostClusters(clusterData, dim, dimIdx, clustIdx){
 		
 		var data_axis = clusterData[0];
 		var bundle_axis = clusterData[1];
@@ -153,10 +156,10 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		var bezier_cpx = x(dim) + r_axis/2;
 		var moveTox = x(dim);
 
-		drawClusterPolygon(data_axis, bundle_axis, bezier_cpx, moveTox, 1);
+		drawClusterPolygon(data_axis, bundle_axis, bezier_cpx, moveTox, dimIdx, clustIdx);
 	}
 
-	function drawLeftClustersToNextDimension(clusterData, dim){
+	function drawLeftClustersToNextDimension(clusterData, dim, dimIdx, clustIdx){
 		var bundle_axis  = clusterData[1];
 		var data_axis    = clusterData[0];
 
@@ -172,8 +175,9 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		path.closePath();
 
 		foreground = svg.append("g");
-		foreground.attr("class", "foreground d"+i+"_c"+j).append("path").attr("d", path);
-
+		foreground.attr("class", "foreground d-"+dimIdx+1+"_ct"+clustIdx)
+		.append("path").attr("d", path);
+		$(".d-"+dimIdx+1+"_ct"+clustIdx).on('click', function(e){console.log('hello '+dim+clustIdx);});
 	}
 
 	function utility(dimIdx, clustIdx) {
@@ -226,7 +230,6 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		path.closePath();
 
 		foreground = svg.append("g");
-		// substring method may cause error. find better class naming scheme
 		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx)
 				  .append("path").attr("d", path);
 		$(".d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx).on('click', function(e){console.log('hello '+dim+clustIdx+" "+nClustIdx);});
@@ -238,7 +241,6 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 		var nClusters = stats[dimensions[[1+dimIdx]]];
 		for (var i = 0; i < nClusters.length; i++){
-			// debugger;
 			var n = nClusters[i];
 			var scale = y[dimensions[1+dimIdx]];
 			var mean = scale(n.mean),
@@ -266,8 +268,8 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 			drawLeftClustersTentacles(bundleAxis[0], bundleAxis[1], dimensions[dimIdx], dimensions[dimIdx+1], clustIdx, i, dimIdx);
 		}
 		
-		drawLeftmostClusters(clusterData[0], dimensions[dimIdx]);
-		drawLeftClustersToNextDimension(clusterData[1], dimensions[dimIdx+1]);
+		drawLeftmostClusters(clusterData[0], dimensions[dimIdx], dimIdx, clustIdx);
+		drawLeftClustersToNextDimension(clusterData[1], dimensions[dimIdx+1], dimIdx, clustIdx);
 		
 	}
 	
