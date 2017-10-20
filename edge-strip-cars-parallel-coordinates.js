@@ -123,8 +123,10 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		var cluster = clusters[d],
 			ncluster = clusters[dimensions[i+1]];
 		
-		for(j = 0; j < cluster.length; j++){ // loop on current dimension's clusters
+		for(var j = 0; j < cluster.length; j++){ // loop on current dimension's clusters
+			var visited = false;
 			stats[d][j].tentacles = [];
+			var max = -1;
 			for (var k = 0; k < ncluster.length; k++){  // loop over clusters of next dimension
 
 				var points = _.filter(cars, function(row){
@@ -133,13 +135,17 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				});
 				
 				stats[d][j].tentacles.push(points.length);
-
+				
+				if (max < points.length) max = points.length;
 			}
+			console.log(stats[d][j].tentacles, max);
 
-			var max = _.max(stats[d][j].tentacles);
-			for (k = 0; k < ncluster.length; k++) {
+			if (!visited){
 				stats[d][j].tentacles = _.map(stats[d][j].tentacles, function(tm){ return tm/max;});
+				visited = true;
 			}
+
+			debugger;
 		}
 
 	}
@@ -154,23 +160,7 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 
 
 
-	// create opacity matrix amongst clusters. we can only create triangle matrix and
-	// can disregard diagonal elements.
-	// size of matrix dimension * clusters * dimension2 * clusters?
-	// for (var i = 0; i < dimensions.length-1; i++){
-	// 	var d = dimensions[i];
-	// 	for (var c in clusters[d]) {
-	// 		var maxNum = -1;
-	// 		var clusterTentacles = clusters[dimensions[i+1]];
-	// 		for (var conn in clusterTentacles) {
-	// 			debugger;
-	// 			if (maxNum < conn.length) maxNum = conn.length;
-	// 		}
-	// 		for (conn in clusterTentacles){
-	// 			clusterTentacles[conn].count = maxNum < 0 ? 1 : conn.length/maxNum;
-	// 		}
-	// 	}
-	// }
+	
 
 	
 
@@ -245,8 +235,12 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 			bmin = mean + clusterScale * (min - mean),
 			bmean = (bmax + bmin)/2;
 
-		var data_axis = {mean: mean, max: max, min:min, count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount};
-		var bundle_axis = {max: bmax, min:bmin, mean:bmean, count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount};
+		var data_axis = {mean: mean, max: max, min:min, 
+						count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount,
+						tentacles:stats[dim][clustIdx].tentacles};
+		var bundle_axis = {max: bmax, min:bmin, mean:bmean, 
+						   count:stats[dim][clustIdx].count/stats[dim][clustIdx].maxCount,
+						   tentacles:stats[dim][clustIdx].tentacles};
 		
 
 		return [[data_axis, bundle_axis]];
@@ -285,10 +279,10 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 		// calculate opacity by using bundle_axis and nbundle_axis max, min 
 		// and use it with cars dataset.
 
-
+// debugger;
 		foreground = svg.append("g");
 		foreground.attr("class", "foreground d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx)
-				  .append("path").attr("d", path).attr("style", "opacity: "+alphaScaling*bundle_axis.count);
+				  .append("path").attr("d", path).attr("style", "opacity: "+alphaScaling*bundle_axis.tentacles[nClustIdx]);
 		$(".d-"+dimIdx+"_ct"+clustIdx+"_nct"+nClustIdx).on('click', function(e){console.log('hello '+dim+clustIdx+" "+nClustIdx);});
 	}
 
@@ -322,9 +316,10 @@ function buildParallelCoordinatesStrip(data, popt, toggleArray){
 				pbmean = (pbmax + pbmin) / 2;
 			
 			var bundleAxis = [
-				{	mean: pbmean, max: pbmax, min: pbmin, count: clusterData[0][0].count },
-				{   mean: bmean,  max: bmax,  min: bmin,  count: clusterData[0][0].count}
+				{	mean: pbmean, max: pbmax, min: pbmin, count: clusterData[0][0].count, tentacles:clusterData[0][0].tentacles },
+				{   mean: bmean,  max: bmax,  min: bmin,  count: clusterData[0][0].count, tentacles:clusterData[0][0].tentacles}
 			];
+			
 			
 
 			drawLeftClustersTentacles(bundleAxis[0], bundleAxis[1], dimensions[dimIdx], dimensions[dimIdx+1], clustIdx, i, dimIdx);
